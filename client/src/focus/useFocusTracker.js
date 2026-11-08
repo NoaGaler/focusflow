@@ -4,10 +4,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { detectFace, getLandmarker } from "./landmarker";
 import { getModel, POINTS, scoreWindow, WINDOW_FRAMES } from "./model";
-import { cropNormalize } from "./normalize";
+import { MODES, normalizePoints } from "./normalize";
 
-// Which input the shown score uses ("raw" or "crop"). In debug mode both are computed.
-export const NORMALIZATION = "raw";
+// Which input the shown score uses (see normalize.js). In debug mode all are computed.
+export const NORMALIZATION = "nose";
 
 const FPS = 10;
 const SCORE_EVERY_MS = 5000;
@@ -98,15 +98,15 @@ export function useFocusTracker({ onScore, debug = false }) {
         let last = valid[0];
         window.forEach((f, i) => {
           if (f) last = f;
-          input.set(mode === "crop" ? cropNormalize(last, w, h) : last, i * POINTS * 3);
+          input.set(normalizePoints(last, mode, w, h), i * POINTS * 3);
         });
         return input;
       };
       if (debug) {
-        const raw = await scoreWindow(build("raw"));
-        const crop = await scoreWindow(build("crop"));
-        console.log(`[focus debug] raw=${raw.score.toFixed(3)} (level ${raw.level})  crop=${crop.score.toFixed(3)} (level ${crop.level})`);
-        onScoreRef.current?.({ ...(NORMALIZATION === "crop" ? crop : raw), debug: { raw, crop } });
+        const all = {};
+        for (const mode of MODES) all[mode] = await scoreWindow(build(mode));
+        console.log("[focus debug]", MODES.map((m) => `${m}=${all[m].score.toFixed(3)}`).join("  "));
+        onScoreRef.current?.({ ...all[NORMALIZATION], debug: all });
       } else {
         onScoreRef.current?.(await scoreWindow(build(NORMALIZATION)));
       }

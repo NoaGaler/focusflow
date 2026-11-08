@@ -1,8 +1,11 @@
-// Two ways to give the face points to the model:
+// Ways to give the face points to the model:
 //  "raw":  MediaPipe's values relative to the WHOLE camera frame (0..1).
-//  "crop": relative to a square crop around the face with a 20% margin -
-//          the way the training data was prepared (face cropped to 256 px).
-// The crop removes "where is the face in the frame" and "how far is the camera".
+//  "crop": relative to a square crop around the face with a 20% margin
+//          (the training videos were cropped to the face, 256 px).
+//  "nose": the crop, then every point minus the nose tip (point 1), so the
+//          face is described by its shape and head pose, not its position.
+// Testing showed only "nose" makes the score react to head pose (looking at the
+// screen vs. turning away); the other two stay stuck around 0.13-0.23.
 
 export const CROP_MARGIN = 0.2;
 
@@ -26,4 +29,25 @@ export function cropNormalize(points, width, height, margin = CROP_MARGIN) {
     out[i + 2] = (points[i + 2] * width) / side; // MediaPipe z uses the same scale as x
   }
   return out;
+}
+
+const NOSE = 1; // MediaPipe point 1 = nose tip
+
+export function noseCenter(points) {
+  const nx = points[NOSE * 3], ny = points[NOSE * 3 + 1], nz = points[NOSE * 3 + 2];
+  const out = new Float32Array(points.length);
+  for (let i = 0; i < points.length; i += 3) {
+    out[i] = points[i] - nx;
+    out[i + 1] = points[i + 1] - ny;
+    out[i + 2] = points[i + 2] - nz;
+  }
+  return out;
+}
+
+export const MODES = ["raw", "crop", "nose"];
+
+export function normalizePoints(points, mode, width, height) {
+  if (mode === "raw") return points;
+  const cropped = cropNormalize(points, width, height);
+  return mode === "nose" ? noseCenter(cropped) : cropped;
 }

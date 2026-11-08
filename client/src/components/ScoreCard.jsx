@@ -27,8 +27,9 @@ export default function ScoreCard({ last, average, noFace, waitingFirst, progres
       {average != null && <div className="small muted avg">Session average: {percent(average)}</div>}
       {last?.debug && (
         <div className="small debug-box">
-          Debug · raw: <b>{percent(last.debug.raw.score)}</b> (level {last.debug.raw.level}) ·
-          crop: <b>{percent(last.debug.crop.score)}</b> (level {last.debug.crop.level})
+          Debug · {Object.entries(last.debug).map(([mode, r]) => (
+            <span key={mode}> {mode}: <b>{percent(r.score)}</b></span>
+          ))}
         </div>
       )}
     </div>
