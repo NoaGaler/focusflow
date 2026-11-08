@@ -12,7 +12,7 @@ def check_password_strength(password: str) -> str:
         raise ValueError("Password must be at least 8 characters")
     if len(password.encode("utf-8")) > 72:  # bcrypt only uses the first 72 bytes
         raise ValueError("Password is too long (max 72 bytes)")
-    if not re.search(r"[A-Za-z֐-׿]", password) or not re.search(r"\d", password):
+    if not any(c.isalpha() for c in password) or not re.search(r"\d", password):
         raise ValueError("Password must contain at least one letter and one digit")
     return password
 

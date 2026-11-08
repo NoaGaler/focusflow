@@ -23,9 +23,9 @@ export default function SessionDetail() {
       .catch((e) => setError(e.status === 404 ? "notfound" : e.message));
   }, [sessionId]);
 
-  if (error === "notfound") return <NotFound message="הסשן לא נמצא. ייתכן שאינו שייך לחשבון שלך." />;
+  if (error === "notfound") return <NotFound message="This session was not found. It may not belong to your account." />;
   if (error) return <Alert>{error}</Alert>;
-  if (!s) return <p className="muted">טוען...</p>;
+  if (!s) return <p className="muted">Loading...</p>;
 
   const type = s.content_type || "youtube";
   const drift = findDriftPoints(s.readings, type);
@@ -34,35 +34,35 @@ export default function SessionDetail() {
 
   return (
     <section className="stack">
-      {params.get("finished") && <Alert type="success">הסשן הסתיים ונשמר בהיסטוריה.</Alert>}
-      <Link to="/history" className="muted">→ חזרה להיסטוריה</Link>
+      {params.get("finished") && <Alert type="success">Session ended and saved to your history.</Alert>}
+      <Link to="/history" className="muted">← Back to history</Link>
       <h1>{s.content_title}</h1>
       <div className="stats">
-        <div className="card stat"><span className="stat-num" style={{ color: lvl.color }}>{percent(s.average_score)}</span><span>ציון ממוצע · {lvl.label}</span></div>
-        <div className="card stat"><span className="stat-num">{s.reading_count}</span><span>מדידות</span></div>
-        <div className="card stat"><span className="stat-num">{s.ended_at ? durationBetween(s.started_at, s.ended_at) : "—"}</span><span>משך הסשן</span></div>
-        <div className="card stat"><span className="stat-num">{drift.length}</span><span>נקודות חזרה</span></div>
+        <div className="card stat"><span className="stat-num" style={{ color: lvl.color }}>{percent(s.average_score)}</span><span>Average score · {lvl.label}</span></div>
+        <div className="card stat"><span className="stat-num">{s.reading_count}</span><span>Readings</span></div>
+        <div className="card stat"><span className="stat-num">{s.ended_at ? durationBetween(s.started_at, s.ended_at) : "—"}</span><span>Session length</span></div>
+        <div className="card stat"><span className="stat-num">{drift.length}</span><span>Rewind points</span></div>
       </div>
-      <p className="muted small">התחיל ב-{formatDate(s.started_at)}{s.reading_count ? ` · ${low} מתוך ${s.reading_count} מדידות היו בקשב נמוך` : ""}</p>
+      <p className="muted small">Started {formatDate(s.started_at)}{s.reading_count ? ` · ${low} of ${s.reading_count} readings were low focus` : ""}</p>
 
       <div className="card">
-        <h2>הקשב לאורך הסשן</h2>
+        <h2>Attention during the session</h2>
         <FocusChart readings={s.readings} contentType={type} />
         <FocusTimeline readings={s.readings} duration={type === "text" ? 100 : 0} contentType={type} driftPoints={drift} />
       </div>
 
       <div className="card">
-        <h2>נקודות חזרה – מה כדאי לראות שוב</h2>
+        <h2>Rewind points – worth watching again</h2>
         {drift.length === 0 ? (
-          <p className="muted">לא נמצאו רגעים של ירידה בקשב. כל הכבוד!</p>
+          <p className="muted">No drops in focus were found. Well done!</p>
         ) : (
           <ul className="drift-table">
             {drift.map((p, i) => (
               <li key={i}>
-                <span>הריכוז ירד סביב <strong>{formatPosition(p.position, type)}</strong></span>
+                <span>Focus dropped around <strong>{formatPosition(p.position, type)}</strong></span>
                 {contentExists && type === "youtube" && (
                   <Link className="btn btn-primary btn-sm" to={`/watch/${s.content_id}?t=${Math.floor(p.position)}`}>
-                    לצפות שוב מ-{formatPosition(p.position)}
+                    Watch again from {formatPosition(p.position)}
                   </Link>
                 )}
               </li>
@@ -70,9 +70,9 @@ export default function SessionDetail() {
           </ul>
         )}
         {contentExists ? (
-          <Link className="btn btn-ghost" to={`/watch/${s.content_id}`}>סשן חדש על אותו תוכן</Link>
+          <Link className="btn btn-ghost" to={`/watch/${s.content_id}`}>New session on this content</Link>
         ) : (
-          <p className="small muted">פריט התוכן נמחק מהספרייה, אבל הסשן נשמר.</p>
+          <p className="small muted">The content item was deleted from your library, but this session was kept.</p>
         )}
       </div>
     </section>

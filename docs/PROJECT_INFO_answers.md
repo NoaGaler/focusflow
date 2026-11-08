@@ -1,25 +1,25 @@
-# תשובות מוכנות ל-PROJECT_INFO.docx
+# Ready answers for PROJECT_INFO.docx
 
-העתיקו כל תשובה לעמודה "התשובה שלכם" בקובץ ה-Word. מה שמסומן ב-`<<...>>` צריך להשלים.
+Copy each answer into the "your answer" column of the Word file. Anything marked `<<...>>` still needs to be filled in.
 
-## פרטים כלליים
-| שדה | תשובה |
+## General
+| Field | Answer |
 |---|---|
 | project_name | FocusFlow – Rewind |
 | authors | `<<email1@grunitech...,email2@...,email3@...>>` |
 | one_sentence_description | Watch a YouTube video while the webcam measures your attention in the browser; when focus drops, the site marks the moment and offers to rewind you exactly to where you drifted. |
 
-## תוכן
-| שדה | תשובה |
+## Content
+| Field | Answer |
 |---|---|
 | main_content_type | video |
 | what_is_a_content_item | A YouTube video with a title (any youtube.com/watch, youtu.be or shorts link). Also supported: pasted text for reading (scroll-based position). |
 | sample_content_type | video |
 | sample_content_for_testing | https://www.youtube.com/watch?v=aircAruvnKk |
-| interface_language | hebrew |
+| interface_language | english |
 
-## טכנולוגיה
-| שדה | תשובה |
+## Technology
+| Field | Answer |
 |---|---|
 | backend_framework | FastAPI (Python 3.12) + uvicorn |
 | frontend_framework | React 18 + Vite, served by nginx |
@@ -29,26 +29,26 @@
 | model_highlights | Sliding 10-second window re-scored every 5 seconds; "rewind points" turn score drops into clickable moments in the video; colored attention timeline under the video; verified identical output to Python onnxruntime. |
 | changes_to_recommended_api | Same paths and fields. Additions: readings accept optional `level` (model class 0–4); sessions list also returns `content_title`, `content_type`, `ended_at`, `reading_count`. Extra alias `GET /api/health`. Login is rate-limited (429). |
 
-## שימוש באתר
-| שדה | תשובה |
+## Using the site
+| Field | Answer |
 |---|---|
-| how_to_register | Home page → "הרשמה בחינם" → display name, email, password (8+ chars with a letter and a digit) twice → then log in. |
+| how_to_register | Home page → "Sign up for free" → display name, email, password (8+ chars with a letter and a digit) twice → then log in. |
 | what_is_a_session | same |
-| how_to_start_a_session | Library → add a YouTube link (title optional) → "התחלת סשן" on the item → "אני מסכים/ה – הפעלת מצלמה והתחלת סשן". The video starts playing. |
+| how_to_start_a_session | My library → add a YouTube link (title optional) → "Start session" on the item → "I agree – turn on camera and start session". The video starts playing. |
 | camera_notes | Default camera; if more than one camera exists a selector appears (virtual cameras such as OBS work). Camera turns on only after clicking the consent button; the preview shows the detected face points. |
 | where_the_score_appears | Watch screen, right panel: big number 0–100 with a colored bar and label; plus a colored timeline under the video. History → session: chart + average. |
 | seconds_until_first_score | 10 (then a new score every 5 seconds) |
-| low_focus_reaction | Score below 40: an orange alert "נראה שהריכוז ירד" with a button to rewind the video to 10 seconds before the drop; the moment is added to the "נקודות חזרה" list and marked on the timeline. |
-| how_to_end_a_session | "סיום סשן" button (red) → session summary page; also listed under "היסטוריה" with its average score. Leaving the page also ends it. |
+| low_focus_reaction | Score below 40: an orange alert "Looks like your focus dropped" with a "Rewind to m:ss" button that jumps to 10 seconds before the drop; the moment is added to the "Rewind points" list and marked on the timeline. |
+| how_to_end_a_session | "End session" button (red) → session summary page; also listed under "History" with its average score. Leaving the page also ends it. |
 
-## הרצה
-| שדה | תשובה |
+## Running
+| Field | Answer |
 |---|---|
 | run_command | docker compose up |
 | setup_notes | Client: http://localhost:3000 · Server: http://localhost:8000/health · API docs: /api/docs. YouTube must be reachable from the browser. First model load takes a few seconds. |
 
-## אבטחה והגנה על נתונים
-| שדה | תשובה |
+## Security and data protection
+| Field | Answer |
 |---|---|
 | password_storage | bcrypt (Python `bcrypt` library), cost factor 12, random per-password salt stored inside the hash. The password and the hash are never returned in any response and never logged; responses are built from an explicit field list. |
 | password_rules | Minimum 8 characters, at least one letter and one digit, max 72 bytes (bcrypt limit). Checked in the client and enforced again on the server: weak password → 422 with a clear message, nothing is saved. |
@@ -60,15 +60,15 @@
 | secrets_handling | No secrets in code, images or GitHub: values come from environment variables (`.env`, git-ignored and docker-ignored). JWT_SECRET is optional locally (random per start); in the cloud all secrets come from Google Secret Manager. |
 | extra_account_security | Brute-force protection: 5 wrong passwords per email → login blocked for 15 minutes (429), stored in MongoDB so it works across server instances. Constant-time-ish login (bcrypt runs even for unknown emails) and one generic error message. Token revocation on logout and on password change. Server runs as a non-root user in Docker. |
 
-## מצב הפרויקט
-| שדה | תשובה |
+## Project status
+| Field | Answer |
 |---|---|
 | works_fully | Register, login, logout, profile (rename, change password, delete account), library (YouTube + text, add/delete), sessions with camera + in-browser model, no-face detection, low-focus alert with rewind, attention timeline, history with chart and trend, user isolation, mobile layout |
 | partially_works_or_missing | `<<fill in honestly after your own testing>>` |
 | known_issues | Scores are a statistical estimate over 10 seconds and can be noisy. Some YouTube videos block embedding; the site shows a clear message. |
 
-## הפרויקט שלכם
-| שדה | תשובה |
+## Your project
+| Field | Answer |
 |---|---|
 | plugin | none |
 | extra_features | Rewind points (jump back to where focus dropped), colored attention timeline under the video, session chart, attention trend across sessions, text reading content type, profile (name, password, delete), brute-force protection, token revocation |

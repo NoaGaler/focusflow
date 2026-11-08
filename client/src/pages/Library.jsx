@@ -18,9 +18,9 @@ function AddContentForm({ onAdded }) {
     setError("");
     const src = source.trim();
     if (type === "youtube" && !YT_RE.test(src))
-      return setError("זה לא נראה כמו קישור ל-YouTube. דוגמה: https://www.youtube.com/watch?v=...");
-    if (type === "text" && src.length < 20) return setError("הטקסט קצר מדי (לפחות 20 תווים).");
-    const finalTitle = title.trim() || (type === "youtube" ? "סרטון YouTube" : src.slice(0, 40) + "...");
+      return setError("This does not look like a YouTube link. Example: https://www.youtube.com/watch?v=...");
+    if (type === "text" && src.length < 20) return setError("The text is too short (at least 20 characters).");
+    const finalTitle = title.trim() || (type === "youtube" ? "YouTube video" : src.slice(0, 40) + "...");
     setBusy(true);
     try {
       const item = await api("/content", { method: "POST", body: { type, title: finalTitle, source: src } });
@@ -28,7 +28,7 @@ function AddContentForm({ onAdded }) {
       setSource("");
       onAdded(item);
     } catch (err) {
-      setError(err.status === 422 ? `הפריט לא נשמר: ${err.message}` : err.message);
+      setError(err.status === 422 ? `The item was not saved: ${err.message}` : err.message);
     } finally {
       setBusy(false);
     }
@@ -36,35 +36,35 @@ function AddContentForm({ onAdded }) {
 
   return (
     <form className="card add-form" onSubmit={submit} noValidate>
-      <h2>הוספת תוכן</h2>
-      <div className="type-switch" role="radiogroup" aria-label="סוג התוכן">
+      <h2>Add content</h2>
+      <div className="type-switch" role="radiogroup" aria-label="Content type">
         <label className={type === "youtube" ? "active" : ""}>
           <input type="radio" name="type" value="youtube" checked={type === "youtube"} onChange={() => setType("youtube")} />
-          סרטון YouTube
+          YouTube video
         </label>
         <label className={type === "text" ? "active" : ""}>
           <input type="radio" name="type" value="text" checked={type === "text"} onChange={() => setType("text")} />
-          טקסט לקריאה
+          Text to read
         </label>
       </div>
-      <label htmlFor="title">כותרת {type === "youtube" && <span className="muted">(לא חובה)</span>}</label>
+      <label htmlFor="title">Title {type === "youtube" && <span className="muted">(optional)</span>}</label>
       <input id="title" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)}
-             placeholder={type === "youtube" ? "למשל: הרצאה על אלגוריתמים" : "למשל: מאמר על זיכרון"} />
+             placeholder={type === "youtube" ? "e.g. Lecture on algorithms" : "e.g. An article about memory"} />
       {type === "youtube" ? (
         <>
-          <label htmlFor="source">קישור לסרטון</label>
+          <label htmlFor="source">Video link</label>
           <input id="source" dir="ltr" value={source} onChange={(e) => setSource(e.target.value)}
                  placeholder="https://www.youtube.com/watch?v=..." />
         </>
       ) : (
         <>
-          <label htmlFor="source">הטקסט</label>
+          <label htmlFor="source">Text</label>
           <textarea id="source" rows={6} value={source} onChange={(e) => setSource(e.target.value)}
-                    placeholder="הדביקו כאן את הטקסט שתרצו לקרוא" />
+                    placeholder="Paste the text you want to read here" />
         </>
       )}
       <Alert>{error}</Alert>
-      <button className="btn btn-primary" disabled={busy}>{busy ? "מוסיף..." : "הוספה לספרייה"}</button>
+      <button className="btn btn-primary" disabled={busy}>{busy ? "Adding..." : "Add to library"}</button>
     </form>
   );
 }
@@ -79,11 +79,11 @@ export default function Library() {
   }, []);
 
   async function remove(item) {
-    if (!window.confirm(`למחוק את "${item.title}" מהספרייה?`)) return;
+    if (!window.confirm(`Delete "${item.title}" from your library?`)) return;
     try {
       await api(`/content/${item.id}`, { method: "DELETE" });
       setItems((list) => list.filter((i) => i.id !== item.id));
-      setNotice(`"${item.title}" נמחק.`);
+      setNotice(`"${item.title}" was deleted.`);
     } catch (e) {
       setError(e.message);
     }
@@ -91,15 +91,15 @@ export default function Library() {
 
   return (
     <section className="stack">
-      <h1>הספרייה שלי</h1>
-      <AddContentForm onAdded={(item) => { setItems((l) => [item, ...(l || [])]); setNotice(`"${item.title}" נוסף לספרייה. לחצו "התחלת סשן" כדי להתחיל.`); }} />
+      <h1>My library</h1>
+      <AddContentForm onAdded={(item) => { setItems((l) => [item, ...(l || [])]); setNotice(`"${item.title}" was added. Click "Start session" to begin.`); }} />
       <Alert type="success">{notice}</Alert>
       <Alert>{error}</Alert>
-      {items === null && !error && <p className="muted">טוען את הספרייה...</p>}
+      {items === null && !error && <p className="muted">Loading your library...</p>}
       {items?.length === 0 && (
         <div className="card empty">
-          <p><strong>הספרייה עדיין ריקה.</strong></p>
-          <p className="muted">הוסיפו קישור לסרטון YouTube או טקסט בטופס שלמעלה, ואז התחילו סשן.</p>
+          <p><strong>Your library is empty.</strong></p>
+          <p className="muted">Add a YouTube link or a text using the form above, then start a session.</p>
         </div>
       )}
       {items?.length > 0 && (
@@ -112,13 +112,13 @@ export default function Library() {
                 <div className="thumb text-thumb" aria-hidden="true">{item.source.slice(0, 120)}</div>
               )}
               <div className="content-info">
-                <span className="tag">{item.type === "youtube" ? "סרטון" : "טקסט"}</span>
+                <span className="tag">{item.type === "youtube" ? "Video" : "Text"}</span>
                 <h3 title={item.title}>{item.title}</h3>
-                <span className="muted small">נוסף {formatDate(item.created_at)}</span>
+                <span className="muted small">Added {formatDate(item.created_at)}</span>
               </div>
               <div className="card-actions">
-                <Link className="btn btn-primary" to={`/watch/${item.id}`}>התחלת סשן</Link>
-                <button className="btn btn-ghost" onClick={() => remove(item)} aria-label={`מחיקת ${item.title}`}>מחיקה</button>
+                <Link className="btn btn-primary" to={`/watch/${item.id}`}>Start session</Link>
+                <button className="btn btn-ghost" onClick={() => remove(item)} aria-label={`Delete ${item.title}`}>Delete</button>
               </div>
             </li>
           ))}

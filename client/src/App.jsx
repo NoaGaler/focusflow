@@ -14,14 +14,14 @@ import NotFound from "./pages/NotFound";
 function Protected({ children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
-  if (loading) return <p className="center muted">טוען...</p>;
+  if (loading) return <p className="center muted">Loading...</p>;
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   return children;
 }
 
 function GuestOnly({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <p className="center muted">טוען...</p>;
+  if (loading) return <p className="center muted">Loading...</p>;
   return user ? <Navigate to="/library" replace /> : children;
 }
 

@@ -31,11 +31,11 @@ function YouTubePlayer({ videoId, startAt, playerRef, onReady, onError }) {
               playerRef.current = player;
               onReady?.(player);
             },
-            onError: () => onError?.("לא ניתן לנגן את הסרטון (ייתכן שהוא פרטי, נמחק או שהבעלים חסם הטמעה)."),
+            onError: () => onError?.("This video cannot be played (it may be private, deleted, or its owner blocked embedding)."),
           },
         });
       })
-      .catch(() => onError?.("לא הצלחנו לטעון את נגן YouTube. בדקו את החיבור לאינטרנט."));
+      .catch(() => onError?.("Could not load the YouTube player. Check your internet connection."));
     return () => {
       cancelled = true;
       playerRef.current = null;
@@ -50,7 +50,7 @@ function TextReader({ text, readerRef, onScroll }) {
   const paragraphs = text.split(/\n\s*\n|\n/).filter((p) => p.trim());
   return (
     // React escapes all text, so pasted HTML/JS is shown as plain text (no XSS).
-    <div className="reader" ref={readerRef} onScroll={onScroll} tabIndex={0} aria-label="הטקסט לקריאה">
+    <div className="reader" ref={readerRef} onScroll={onScroll} tabIndex={0} aria-label="Text to read">
       {paragraphs.map((p, i) => <p key={i}>{p}</p>)}
     </div>
   );
@@ -145,7 +145,7 @@ export default function Watch() {
     try {
       await api(`/sessions/${sid}/readings`, { method: "POST", body: reading });
     } catch (e) {
-      if (e.status === 404 || e.status === 409) setError("הסשן נסגר. אפשר להתחיל סשן חדש.");
+      if (e.status === 404 || e.status === 409) setError("This session was closed. You can start a new one.");
     }
   }, [getPosition, isText]);
 
@@ -198,9 +198,9 @@ export default function Watch() {
     if (sessionRef.current) api(`/sessions/${sessionRef.current}/end`, { method: "POST", keepalive: true }).catch(() => {});
   }, []);
 
-  if (loadError === "notfound") return <NotFound message="הפריט לא נמצא. ייתכן שהוא נמחק או שאינו שייך לחשבון שלך." />;
+  if (loadError === "notfound") return <NotFound message="This item was not found. It may have been deleted, or it does not belong to your account." />;
   if (loadError) return <Alert>{loadError}</Alert>;
-  if (!content) return <p className="muted">טוען...</p>;
+  if (!content) return <p className="muted">Loading...</p>;
 
   const avg = readings.length ? readings.reduce((a, r) => a + r.score, 0) / readings.length : null;
   const driftPoints = findDriftPoints(readings, content.type);
@@ -209,7 +209,7 @@ export default function Watch() {
   return (
     <section className="watch">
       <div className="watch-head">
-        <Link to="/library" className="muted">→ חזרה לספרייה</Link>
+        <Link to="/library" className="muted">← Back to my library</Link>
         <h1>{content.title}</h1>
       </div>
 
@@ -226,14 +226,14 @@ export default function Watch() {
           {drift && (
             <div className="drift-alert" role="alert">
               <div>
-                <strong>נראה שהריכוז ירד.</strong>{" "}
-                {isText ? "לחזור לקטע שבו התחלת לאבד את החוט?" : `לחזור ל-${formatPosition(drift.position)}, הרגע שבו התחלת לפספס?`}
+                <strong>Looks like your focus dropped.</strong>{" "}
+                {isText ? "Go back to the part where you started to drift?" : `Go back to ${formatPosition(drift.position)}, where you started to drift?`}
               </div>
               <div className="drift-actions">
                 <button className="btn btn-primary" onClick={() => { seek(drift.position); setDrift(null); }}>
-                  {isText ? "חזרה לקטע" : `חזרה ל-${formatPosition(drift.position)}`}
+                  {isText ? "Go back" : `Rewind to ${formatPosition(drift.position)}`}
                 </button>
-                <button className="btn btn-ghost" onClick={() => setDrift(null)}>אני בסדר, להמשיך</button>
+                <button className="btn btn-ghost" onClick={() => setDrift(null)}>I'm fine, continue</button>
               </div>
             </div>
           )}
@@ -245,24 +245,25 @@ export default function Watch() {
         <aside className="watch-side card">
           {phase === "ready" || phase === "starting" ? (
             <div className="consent">
-              <h2>מדידת קשב</h2>
+              <h2>Attention tracking</h2>
               <p className="small">
-                בלחיצה על הכפתור תופעל המצלמה. <strong>התמונה לא נשמרת ולא יוצאת מהמחשב</strong>:
-                הדפדפן מחשב נקודות פנים, מודל הקשב רץ אצלך, ולשרת נשלח רק הציון (מספר בין 0 ל-100) והמיקום בסרטון.
-                הציון הראשון יופיע אחרי כ-10 שניות. אפשר גם לצפות בלי מדידה.
+                Clicking the button turns on your camera. <strong>The video is never saved and never leaves your computer</strong>:
+                your browser finds face points, the attention model runs on your device, and only the score (0-100) and the
+                position in the video are sent to the server. The first score appears after about 10 seconds.
+                You can also just watch without tracking.
               </p>
               {cameras.length > 1 && (
                 <>
-                  <label htmlFor="cam">מצלמה</label>
+                  <label htmlFor="cam">Camera</label>
                   <select id="cam" value={cameraId} onChange={(e) => setCameraId(e.target.value)}>
-                    <option value="">ברירת המחדל</option>
+                    <option value="">Default camera</option>
                     {cameras.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
                   </select>
                 </>
               )}
               <Alert>{tracker.error || error}</Alert>
               <button className="btn btn-primary btn-block" onClick={startSession} disabled={phase === "starting"}>
-                {phase === "starting" ? "מפעיל מצלמה וטוען מודל..." : "אני מסכים/ה – הפעלת מצלמה והתחלת סשן"}
+                {phase === "starting" ? "Starting camera and loading model..." : "I agree – turn on camera and start session"}
               </button>
             </div>
           ) : (
@@ -271,24 +272,24 @@ export default function Watch() {
                          waitingFirst={!last && !noFace} progress={tracker.progress} />
               <Alert>{error}</Alert>
               <button className="btn btn-danger btn-block" onClick={endSession} disabled={phase === "ending"}>
-                {phase === "ending" ? "מסיים..." : "סיום סשן"}
+                {phase === "ending" ? "Ending..." : "End session"}
               </button>
             </>
           )}
 
           <div className={`camera-box ${tracker.status === "running" ? "" : "hidden"}`}>
-            <video ref={tracker.videoRef} muted playsInline aria-label="תצוגת מצלמה" />
+            <video ref={tracker.videoRef} muted playsInline aria-label="Camera preview" />
             <canvas ref={tracker.canvasRef} aria-hidden="true" />
             <span className={`face-dot ${tracker.faceVisible ? "on" : ""}`}>
-              {tracker.faceVisible ? "פנים זוהו" : "לא זוהו פנים"}
+              {tracker.faceVisible ? "Face detected" : "No face detected"}
             </span>
           </div>
 
           {session && (
             <div className="drift-list">
-              <h3>נקודות חזרה</h3>
+              <h3>Rewind points</h3>
               {driftPoints.length === 0 ? (
-                <p className="small muted">עדיין אין. כשהריכוז יירד, הרגע יופיע כאן.</p>
+                <p className="small muted">None yet. When your focus drops, the moment will appear here.</p>
               ) : (
                 <ul>
                   {driftPoints.map((p, i) => (

@@ -14,27 +14,27 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
 
   const info = params.get("registered")
-    ? "נרשמת בהצלחה! עכשיו אפשר להתחבר."
+    ? "Your account was created! You can log in now."
     : params.get("expired")
-    ? "ההתחברות פגה. יש להתחבר שוב."
+    ? "Your login has expired. Please log in again."
     : params.get("loggedout")
-    ? "התנתקת בהצלחה."
+    ? "You have logged out."
     : params.get("deleted")
-    ? "החשבון וכל הנתונים שלו נמחקו."
+    ? "Your account and all its data were deleted."
     : "";
 
   async function submit(e) {
     e.preventDefault();
     setError("");
-    if (!email.trim() || !password) return setError("יש למלא אימייל וסיסמה.");
+    if (!email.trim() || !password) return setError("Please enter your email and password.");
     setBusy(true);
     try {
       await login(email.trim(), password);
       navigate(location.state?.from || "/library", { replace: true });
     } catch (err) {
-      if (err.status === 401) setError("אימייל או סיסמה שגויים.");
-      else if (err.status === 429) setError("יותר מדי ניסיונות שגויים. נסו שוב בעוד 15 דקות.");
-      else if (err.status === 422) setError("כתובת האימייל לא תקינה.");
+      if (err.status === 401) setError("Wrong email or password.");
+      else if (err.status === 429) setError("Too many wrong attempts. Please try again in 15 minutes.");
+      else if (err.status === 422) setError("This email address is not valid.");
       else setError(err.message);
     } finally {
       setBusy(false);
@@ -43,19 +43,19 @@ export default function Login() {
 
   return (
     <section className="card form-card">
-      <h1>התחברות</h1>
+      <h1>Log in</h1>
       <Alert type="success">{info}</Alert>
       <form onSubmit={submit} noValidate>
-        <label htmlFor="email">אימייל</label>
+        <label htmlFor="email">Email</label>
         <input id="email" type="email" dir="ltr" autoComplete="email" value={email}
                onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
-        <label htmlFor="password">סיסמה</label>
+        <label htmlFor="password">Password</label>
         <input id="password" type="password" dir="ltr" autoComplete="current-password" value={password}
                onChange={(e) => setPassword(e.target.value)} />
         <Alert>{error}</Alert>
-        <button className="btn btn-primary btn-block" disabled={busy}>{busy ? "מתחבר..." : "התחברות"}</button>
+        <button className="btn btn-primary btn-block" disabled={busy}>{busy ? "Logging in..." : "Log in"}</button>
       </form>
-      <p className="muted center">אין לך חשבון? <Link to="/register">להרשמה</Link></p>
+      <p className="muted center">Don't have an account? <Link to="/register">Sign up</Link></p>
     </section>
   );
 }

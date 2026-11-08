@@ -37,7 +37,7 @@ export async function api(path, { method = "GET", body, auth = true, keepalive =
       keepalive,
     });
   } catch {
-    throw new ApiError(0, "אין חיבור לשרת. בדקו את החיבור לאינטרנט ונסו שוב.");
+    throw new ApiError(0, "Cannot reach the server. Check your internet connection and try again.");
   }
 
   if (res.status === 204) return null;
@@ -45,7 +45,7 @@ export async function api(path, { method = "GET", body, auth = true, keepalive =
   if (!res.ok) {
     if (res.status === 401 && auth && token) onUnauthorized(); // token expired / revoked
     const detail = typeof data.detail === "string" ? data.detail : "";
-    throw new ApiError(res.status, detail || `שגיאה מהשרת (${res.status})`);
+    throw new ApiError(res.status, detail || `Server error (${res.status})`);
   }
   return data;
 }

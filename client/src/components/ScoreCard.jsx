@@ -4,18 +4,18 @@ export default function ScoreCard({ last, average, noFace, waitingFirst, progres
   const level = scoreLevel(last?.score);
   return (
     <div className="score-card" aria-live="polite">
-      <div className="score-label">ציון קשב נוכחי</div>
+      <div className="score-label">Current attention score</div>
       {waitingFirst ? (
         <>
           <div className="score-number muted">…</div>
-          <div className="small muted">הציון הראשון יופיע אחרי כ-10 שניות</div>
+          <div className="small muted">The first score appears after about 10 seconds</div>
           <div className="progress"><span style={{ width: `${Math.round(progress * 100)}%` }} /></div>
         </>
       ) : noFace ? (
         <>
           <div className="score-number" style={{ color: "#94a3b8" }}>—</div>
-          <div className="badge badge-gray">לא זוהו פנים</div>
-          <div className="small muted">שבו מול המצלמה כדי שנוכל למדוד.</div>
+          <div className="badge badge-gray">No face detected</div>
+          <div className="small muted">Sit in front of the camera so we can measure.</div>
         </>
       ) : (
         <>
@@ -24,7 +24,7 @@ export default function ScoreCard({ last, average, noFace, waitingFirst, progres
           <div className="badge" style={{ background: level.color }}>{level.label}</div>
         </>
       )}
-      {average != null && <div className="small muted avg">ממוצע בסשן: {percent(average)}</div>}
+      {average != null && <div className="small muted avg">Session average: {percent(average)}</div>}
     </div>
   );
 }

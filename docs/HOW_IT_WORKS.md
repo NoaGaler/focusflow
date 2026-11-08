@@ -1,102 +1,101 @@
-# איך FocusFlow עובד: הסבר מלא
+# How FocusFlow works
 
-המסמך הזה נועד כדי שתוכלו להבין את כל הפרויקט ולהסביר אותו בהגנה.
+A full walkthrough of the project, so every team member can understand and explain each part.
 
-## 1. הרעיון
+## 1. The idea
 
-משתמש צופה בסרטון YouTube (או קורא טקסט), והמצלמה מודדת כמה הוא מרוכז.
-החידוש שלנו הוא **נקודות חזרה**: כשהריכוז יורד, האתר לא רק מתריע, אלא שומר את הרגע שבו
-המשתמש "איבד את החוט" ומציע כפתור "חזרה ל-3:42". מתחת לסרטון יש פס צבעוני (ירוק, צהוב ואדום)
-שמראה איפה היה ריכוז ואיפה לא. בסוף הסשן יש גרף ורשימה של קטעים שכדאי לראות שוב.
+The user watches a YouTube video (or reads a text) while the webcam measures how focused they are.
+Our twist is **rewind points**: when focus drops, the site does not just show an alert. It remembers the moment
+the user started to drift and offers a "Rewind to 3:42" button. A colored bar under the video (green / yellow / red)
+shows where the user was focused. At the end there is a chart and a list of parts worth watching again.
 
-## 2. הארכיטקטורה
+## 2. Architecture
 
 ```
-דפדפן
- ├─ מצלמה → MediaPipe (478 נקודות פנים, 10 פעמים בשנייה)
- ├─ חלון של 100 פריימים (10 שניות) → מודל v4_2.onnx → ציון 0..1  (הכול בדפדפן!)
- └─ שולח לשרת רק: { position: זמן בסרטון, score: הציון }
+Browser
+ ├─ camera → MediaPipe (478 face points, 10 times per second)
+ ├─ window of 100 frames (10 s) → v4_2.onnx model → score 0..1   (all in the browser!)
+ └─ sends to the server only: { position: time in the video, score }
         │  /api/...
         ▼
- nginx (קונטיינר הלקוח, פורט 3000) ──/api──► FastAPI (קונטיינר השרת, פורט 8000) ──► MongoDB
+ nginx (client container, port 3000) ──/api──► FastAPI (server container, port 8000) ──► MongoDB
 ```
 
-* **3 קונטיינרים:** `client` (nginx שמגיש את אתר ה-React), `server` (FastAPI) ו-`mongo`.
-* הלקוח פונה תמיד לכתובת יחסית `/api`. ב-Docker, nginx מעביר אותה לשרת. בענן (מטלה 4) ה-Load Balancer
-  יעשה את אותו הדבר. לכן אותו קוד עובד בשני המקומות בלי שינוי.
+* **3 containers:** `client` (nginx serving the React build), `server` (FastAPI) and `mongo`.
+* The client always calls the relative address `/api`. In Docker, nginx forwards it to the server.
+  In the cloud (assignment 4) the Load Balancer does the same. So the same code works in both places, unchanged.
 
-## 3. מה קורה בסשן, צעד אחרי צעד
+## 3. A session, step by step
 
-| # | מה קורה | איפה בקוד |
+| # | What happens | Where in the code |
 |---|---|---|
-| 1 | המשתמש לוחץ "אני מסכים/ה – הפעלת מצלמה" | `client/src/pages/Watch.jsx` → `startSession` |
-| 2 | הדפדפן מבקש הרשאה למצלמה (`getUserMedia`) | `client/src/focus/useFocusTracker.js` → `start` |
-| 3 | נטענים MediaPipe והמודל (פעם אחת) | `focus/landmarker.js`, `focus/model.js` |
-| 4 | השרת פותח סשן חדש | `POST /api/sessions` → `server/app/routers/sessions.py` |
-| 5 | כל 100ms: MediaPipe מחלץ 478 נקודות (x,y,z) מהפריים, ונשמרים 100 הפריימים האחרונים | `useFocusTracker.js` → `frameTimer` |
-| 6 | כל 5 שניות: אם בחצי מהחלון לפחות יש פנים, מריצים את המודל. אחרת מציגים "לא זוהו פנים" | `runModel` |
-| 7 | המודל מחזיר ציון בין 0 ל-1, שמוצג כמספר בין 0 ל-100 עם צבע | `components/ScoreCard.jsx` |
-| 8 | הציון והזמן בסרטון נשלחים לשרת ונשמרים במסד | `POST /api/sessions/{id}/readings` |
-| 9 | ציון מתחת ל-0.4 אחרי ציון תקין יוצר נקודת חזרה, כלומר 10 שניות לפני המדידה | `Watch.jsx` → `onScore`, `utils.js` → `findDriftPoints` |
-| 10 | "סיום סשן": השרת סוגר את הסשן ומחשב ממוצע, והמשתמש מועבר לסיכום | `POST /api/sessions/{id}/end`, `pages/SessionDetail.jsx` |
+| 1 | User clicks "I agree – turn on camera and start session" | `client/src/pages/Watch.jsx` → `startSession` |
+| 2 | The browser asks for camera permission (`getUserMedia`) | `client/src/focus/useFocusTracker.js` → `start` |
+| 3 | MediaPipe and the model are loaded (once) | `focus/landmarker.js`, `focus/model.js` |
+| 4 | The server opens a new session | `POST /api/sessions` → `server/app/routers/sessions.py` |
+| 5 | Every 100 ms: MediaPipe extracts 478 points (x, y, z) from the frame; the last 100 frames are kept | `useFocusTracker.js` → `frameTimer` |
+| 6 | Every 5 s: if at least half the window has a face, the model runs; otherwise "No face detected" | `runModel` |
+| 7 | The model returns a 0–1 score, shown as 0–100 with a color | `components/ScoreCard.jsx` |
+| 8 | Score + video time are sent to the server and stored | `POST /api/sessions/{id}/readings` |
+| 9 | A score below 0.4 after a normal one creates a rewind point (10 s before the reading) | `Watch.jsx` → `onScore`, `utils.js` → `findDriftPoints` |
+| 10 | "End session": the server closes it and computes the average; the user sees the summary | `POST /api/sessions/{id}/end`, `pages/SessionDetail.jsx` |
 
-**למה 10 שניות אחורה?** כל ציון מתאר את 10 השניות שלפני המדידה (100 פריימים). לכן הרגע שבו
-הריכוז התחיל לרדת הוא בערך 10 שניות לפני הציון הנמוך.
+**Why 10 seconds back?** Each score describes the 10 seconds before it (100 frames), so the drop
+started roughly 10 seconds before the low reading.
 
-## 4. המודל
+## 4. The model
 
-* הקובץ: `client/public/models/v4_2.onnx`. המודל מקבל מערך בצורה `[1, 100, 478, 3]` ומחזיר:
-  * `regression_scores`: ציון קשב בין 0 ל-1. בזה אנחנו משתמשים.
-  * `classification_logits`: 5 רמות, שנשמרות בשדה `level` אבל לא מוצגות.
-  * `attention_weights`: משקל לכל פריים. לא בשימוש, אבל אפשר להשתמש בו בפרויקט הסופי.
-* בדקנו שהדפדפן מחזיר **בדיוק** את אותו ציון כמו Python (`0.34063` על אותו קלט), תוך כ-30ms.
-* **למה v4_2?** זה המודל שהמטלה ממליצה עליו, והוא יודע גם לסווג לרמות וגם לתת משקלי Attention.
-  החיסרון: הוא מודל סטטיסטי. ציון בודד יכול להיות רועש, ולכן אנחנו מציגים מגמה ונקודות חזרה,
-  ולא "מענישים" על מדידה אחת.
+* File: `client/public/models/v4_2.onnx`. Input shape `[1, 100, 478, 3]`. Outputs:
+  * `regression_scores`: attention 0–1. This is what we use.
+  * `classification_logits`: 5 levels. Stored as `level`, not displayed.
+  * `attention_weights`: weight per frame. Not used yet (an idea for the final project).
+* We verified the browser returns **exactly** the same score as Python onnxruntime (`0.34063` on the same input), in about 30 ms.
+* **Why v4_2?** It is the recommended model, and it has both the 5-level classification and attention weights.
+  Limitation: it is a statistical estimate, so a single score can be noisy. That is why we show trends and
+  rewind points instead of reacting harshly to one reading.
 
-## 5. מפת קבצים
+## 5. File map
 
 ```
 server/app/
-  main.py          יצירת האפליקציה, טיפול בשגיאות ({"detail": ...}), /health
-  config.py        כל ההגדרות ממשתני סביבה (MONGODB_URI, JWT_SECRET...)
-  db.py            חיבור ל-MongoDB ואינדקסים
-  security.py      bcrypt לסיסמאות, JWT לטוקנים
-  deps.py          get_current_user: בודק את הטוקן בכל בקשה מוגנת
-  schemas.py       אימות קלט (pydantic): אימייל, סיסמה, קישור YouTube...
-  serialize.py     המרה ל-JSON (רק שדות מותרים, לעולם לא ה-hash)
+  main.py          app setup, error format ({"detail": ...}), /health
+  config.py        all settings from environment variables (MONGODB_URI, JWT_SECRET...)
+  db.py            MongoDB connection and indexes
+  security.py      bcrypt for passwords, JWT for tokens
+  deps.py          get_current_user: checks the token on every protected request
+  schemas.py       input validation (pydantic): email, password, YouTube link...
+  serialize.py     JSON output (allowed fields only, never the password hash)
   routers/         auth.py, users.py, content.py, sessions.py
-server/tests/      8 בדיקות שמכסות את כל ה-API, כולל הפרדה בין משתמשים
+server/tests/      8 tests covering the whole API, including user isolation
 client/src/
-  api.js           כל הקריאות לשרת + טיפול ב-401
-  auth.jsx         מצב ההתחברות (נשמר ב-localStorage)
-  focus/           מצלמה, MediaPipe, מודל, נגן YouTube
+  api.js           all server calls + 401 handling
+  auth.jsx         login state (token kept in localStorage)
+  focus/           camera, MediaPipe, model, YouTube player
   pages/           Home, Login, Register, Library, Watch, History, SessionDetail, Profile
-  components/      FocusTimeline (פס צבעוני), FocusChart (גרף), ScoreCard
-client/nginx/      הגדרות nginx (כולל העברת /api לשרת)
+  components/      FocusTimeline (colored bar), FocusChart (chart), ScoreCard
+client/nginx/      nginx config (including forwarding /api to the server)
 ```
 
-## 6. אבטחה (בקצרה, הפירוט נמצא ב-PROJECT_INFO)
+## 6. Security (summary; details in PROJECT_INFO)
 
-* **סיסמאות:** bcrypt עם salt אקראי לכל סיסמה ו-cost 12. ה-hash לא מוחזר אף פעם.
-* **טוקן:** JWT בחתימת HS256, תקף 60 דקות. כל טוקן מקבל מזהה (`jti`):
-  * **בהתנתקות** הטוקן נכנס לרשימה שחורה במסד, שנמחקת לבד כשהטוקן פג.
-  * **בהחלפת סיסמה** מספר הגרסה (`token_version`) עולה, וכל הטוקנים הישנים מפסיקים לעבוד.
-* **הגנה מפני ניחוש סיסמאות:** אחרי 5 ניסיונות שגויים לאותו אימייל, ההתחברות חסומה ל-15 דקות.
-  גם אם האימייל לא קיים מריצים bcrypt, כדי שלא אפשר יהיה לגלות מי רשום לפי זמן התגובה.
-* **הפרדת נתונים:** כל שאילתה מסננת לפי `user_id` מהטוקן, ולא מגוף הבקשה. פריט של משתמש אחר
-  מחזיר 404, כאילו הוא לא קיים.
-* **XSS:** React מציג טקסט כטקסט ולא מריץ HTML שהמשתמש הדביק. קישורים מתקבלים רק
-  מ-YouTube, ונשמרים בצורה מנורמלת.
-* **פרטיות:** התמונה מהמצלמה לא יוצאת מהדפדפן. לשרת נשלחים רק מספרים.
+* **Passwords:** bcrypt, random salt per password, cost 12. The hash is never returned.
+* **Token:** JWT (HS256), valid 60 minutes. Each token has a unique id (`jti`):
+  * **Logout** puts the token on a revoked list in the DB (auto-deleted when it would expire anyway).
+  * **Password change** increments `token_version`, so every older token stops working.
+* **Brute-force protection:** 5 wrong passwords for one email → login blocked for 15 minutes.
+  bcrypt runs even for unknown emails, so response time does not reveal who is registered.
+* **Data isolation:** every query filters by the `user_id` from the token, never from the request body.
+  Another user's item returns 404, as if it does not exist.
+* **XSS:** React renders text as text and never runs pasted HTML. Only YouTube links are accepted, normalized.
+* **Privacy:** camera images never leave the browser. Only numbers are sent to the server.
 
-## 7. החלטות שיישאלו עליהן בהגנה
+## 7. Decisions you will be asked about
 
-| שאלה | התשובה שלנו |
+| Question | Our answer |
 |---|---|
-| למה המודל בדפדפן ולא בשרת? | פרטיות (הפנים לא יוצאות מהמחשב), השרת קל וזול, ואין עומס כשיש הרבה משתמשים. |
-| למה MongoDB? | המבנה של סשן עם רשימת מדידות מתאים למסמך אחד. יש שכבה חינמית ב-Atlas לענן. |
-| למה FastAPI? | אימות קלט אוטומטי, תיעוד ב-`/api/docs`, וזו ההמלצה של המטלה. |
-| מה קורה אם אין פנים? | אם בפחות מחצי מ-100 הפריימים זוהו פנים, לא מריצים את המודל ומציגים "לא זוהו פנים". |
-| למה כל 5 שניות ולא כל 10? | חלון "מחליק": תמיד 10 השניות האחרונות, אבל עדכון תכוף יותר מגיב מהר יותר. |
-| מה זה סשן אצלנו? | פעם אחת של צפייה בפריט: מתחיל בלחיצה על הסכמה, ונגמר ב"סיום סשן" או ביציאה מהדף. |
+| Why run the model in the browser, not the server? | Privacy (face data stays on the device), a light and cheap server, and no server load per user. |
+| Why MongoDB? | A session with its list of readings fits naturally in one document; Atlas has a free tier for the cloud. |
+| Why FastAPI? | Automatic input validation, docs at `/api/docs`, and it is the assignment's recommendation. |
+| What if there is no face? | If fewer than half of the 100 frames have a face, the model is not run and "No face detected" is shown. |
+| Why every 5 seconds and not 10? | A sliding window: always the last 10 seconds, but updating more often reacts faster. |
+| What is a session? | One viewing of an item: it starts at the consent click and ends with "End session" or when leaving the page. |

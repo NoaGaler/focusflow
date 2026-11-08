@@ -4,9 +4,9 @@ import { api } from "../api";
 import Alert from "../components/Alert";
 
 export function passwordProblem(pw) {
-  if (pw.length < 8) return "הסיסמה צריכה להכיל לפחות 8 תווים.";
-  if (!/[A-Za-z֐-׿]/.test(pw) || !/\d/.test(pw)) return "הסיסמה צריכה להכיל לפחות אות אחת וספרה אחת.";
-  if (new TextEncoder().encode(pw).length > 72) return "הסיסמה ארוכה מדי.";
+  if (pw.length < 8) return "Password must be at least 8 characters.";
+  if (!/\p{L}/u.test(pw) || !/\d/.test(pw)) return "Password must contain at least one letter and one digit.";
+  if (new TextEncoder().encode(pw).length > 72) return "Password is too long.";
   return "";
 }
 
@@ -23,11 +23,11 @@ export default function Register() {
     e.preventDefault();
     setError("");
     const email = form.email.trim();
-    if (!form.display_name.trim()) return setError("יש למלא שם תצוגה.");
-    if (!EMAIL_RE.test(email)) return setError("כתובת האימייל לא תקינה.");
+    if (!form.display_name.trim()) return setError("Please enter a display name.");
+    if (!EMAIL_RE.test(email)) return setError("This email address is not valid.");
     const pwErr = passwordProblem(form.password);
     if (pwErr) return setError(pwErr);
-    if (form.password !== form.confirm) return setError("הסיסמאות לא זהות.");
+    if (form.password !== form.confirm) return setError("The passwords do not match.");
 
     setBusy(true);
     try {
@@ -38,7 +38,7 @@ export default function Register() {
       });
       navigate(`/login?registered=1&email=${encodeURIComponent(email)}`);
     } catch (err) {
-      if (err.status === 409) setError("כבר קיים חשבון עם האימייל הזה. אפשר להתחבר במקום.");
+      if (err.status === 409) setError("An account with this email already exists. You can log in instead.");
       else setError(err.message);
     } finally {
       setBusy(false);
@@ -47,21 +47,21 @@ export default function Register() {
 
   return (
     <section className="card form-card">
-      <h1>הרשמה</h1>
+      <h1>Sign up</h1>
       <form onSubmit={submit} noValidate>
-        <label htmlFor="display_name">שם תצוגה</label>
+        <label htmlFor="display_name">Display name</label>
         <input id="display_name" autoComplete="nickname" value={form.display_name} onChange={set("display_name")} maxLength={50} />
-        <label htmlFor="email">אימייל</label>
+        <label htmlFor="email">Email</label>
         <input id="email" type="email" dir="ltr" autoComplete="email" value={form.email} onChange={set("email")} placeholder="name@example.com" />
-        <label htmlFor="password">סיסמה</label>
+        <label htmlFor="password">Password</label>
         <input id="password" type="password" dir="ltr" autoComplete="new-password" value={form.password} onChange={set("password")} />
-        <small className="hint">לפחות 8 תווים, עם אות אחת וספרה אחת לפחות.</small>
-        <label htmlFor="confirm">אימות סיסמה</label>
+        <small className="hint">At least 8 characters, with at least one letter and one digit.</small>
+        <label htmlFor="confirm">Confirm password</label>
         <input id="confirm" type="password" dir="ltr" autoComplete="new-password" value={form.confirm} onChange={set("confirm")} />
         <Alert>{error}</Alert>
-        <button className="btn btn-primary btn-block" disabled={busy}>{busy ? "נרשם..." : "יצירת חשבון"}</button>
+        <button className="btn btn-primary btn-block" disabled={busy}>{busy ? "Creating account..." : "Create account"}</button>
       </form>
-      <p className="muted center">כבר יש לך חשבון? <Link to="/login">להתחברות</Link></p>
+      <p className="muted center">Already have an account? <Link to="/login">Log in</Link></p>
     </section>
   );
 }

@@ -9,15 +9,14 @@ export default function FocusTimeline({ readings, duration, current = null, cont
   function click(e) {
     if (!onSeek) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const fromRight = (rect.right - e.clientX) / rect.width; // RTL page, but time flows left -> right
-    const fromLeft = 1 - fromRight;
+    const fromLeft = (e.clientX - rect.left) / rect.width;
     onSeek(fromLeft * total);
   }
 
   return (
     <div className="timeline-wrap">
       <div className="timeline" dir="ltr" onClick={click} role={onSeek ? "button" : undefined}
-           aria-label="פס הקשב לאורך התוכן. לחיצה קופצת לנקודה">
+           aria-label="Attention along the content. Click to jump to a point">
         {readings.map((r, i) => {
           const start = Math.max(0, r.position - windowLen);
           const left = (start / total) * 100;
@@ -29,15 +28,15 @@ export default function FocusTimeline({ readings, duration, current = null, cont
         })}
         {driftPoints.map((p, i) => (
           <span key={`d${i}`} className="drift-mark" style={{ left: `${(p.position / total) * 100}%` }}
-                title={`נקודת חזרה: ${formatPosition(p.position, contentType)}`} />
+                title={`Rewind point: ${formatPosition(p.position, contentType)}`} />
         ))}
         {current != null && <span className="playhead" style={{ left: `${Math.min(100, (current / total) * 100)}%` }} />}
       </div>
       <div className="legend small muted">
-        <span><i style={{ background: "#22c55e" }} /> מרוכז/ת</span>
-        <span><i style={{ background: "#f59e0b" }} /> קשב בינוני</span>
-        <span><i style={{ background: "#ef4444" }} /> קשב נמוך</span>
-        <span><i className="drift-legend" /> נקודת חזרה</span>
+        <span><i style={{ background: "#22c55e" }} /> Focused</span>
+        <span><i style={{ background: "#f59e0b" }} /> Medium</span>
+        <span><i style={{ background: "#ef4444" }} /> Low focus</span>
+        <span><i className="drift-legend" /> Rewind point</span>
       </div>
     </div>
   );

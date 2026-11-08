@@ -12,17 +12,15 @@ export function formatTime(seconds) {
 
 /** Position label: seconds for video, percent for text. */
 export function formatPosition(position, contentType) {
-  return contentType === "text" ? `${Math.round(position)}% מהטקסט` : formatTime(position);
+  return contentType === "text" ? `${Math.round(position)}% of the text` : formatTime(position);
 }
 
 export function scoreLevel(score) {
-  if (score == null) return { key: "none", label: "אין נתונים", color: "#94a3b8" };
-  if (score < LOW_FOCUS) return { key: "low", label: "קשב נמוך", color: "#ef4444" };
-  if (score < 0.6) return { key: "mid", label: "קשב בינוני", color: "#f59e0b" };
-  return { key: "high", label: "מרוכז/ת", color: "#22c55e" };
+  if (score == null) return { key: "none", label: "No data", color: "#94a3b8" };
+  if (score < LOW_FOCUS) return { key: "low", label: "Low focus", color: "#ef4444" };
+  if (score < 0.6) return { key: "mid", label: "Medium focus", color: "#f59e0b" };
+  return { key: "high", label: "Focused", color: "#22c55e" };
 }
-
-export const MODEL_LEVELS = ["לא נמצא במצלמה", "לא קשוב", "קשב חלש", "קשוב", "קשוב מאוד"];
 
 export function percent(score) {
   return score == null ? "—" : `${Math.round(score * 100)}`;
@@ -30,7 +28,7 @@ export function percent(score) {
 
 export function formatDate(iso) {
   if (!iso) return "";
-  return new Date(iso).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" });
+  return new Date(iso).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" });
 }
 
 export function durationBetween(startIso, endIso) {

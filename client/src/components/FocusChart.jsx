@@ -2,7 +2,7 @@
 import { formatPosition, LOW_FOCUS, scoreLevel } from "../utils";
 
 export default function FocusChart({ readings, contentType, height = 220 }) {
-  if (!readings.length) return <p className="muted">אין מדידות בסשן הזה.</p>;
+  if (!readings.length) return <p className="muted">No readings in this session.</p>;
   const W = 800, H = height, padL = 44, padB = 26, padT = 10;
   const plotW = W - padL - 10, plotH = H - padB - padT;
   const barW = Math.max(2, Math.min(28, plotW / readings.length - 2));
@@ -12,7 +12,7 @@ export default function FocusChart({ readings, contentType, height = 220 }) {
 
   return (
     <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" dir="ltr"
-         aria-label={`גרף קשב: ${readings.length} מדידות`}>
+         aria-label={`Attention chart: ${readings.length} readings`}>
       {[0, 0.25, 0.5, 0.75, 1].map((t) => (
         <g key={t}>
           <line x1={padL} x2={W - 10} y1={y(t)} y2={y(t)} className="grid" />

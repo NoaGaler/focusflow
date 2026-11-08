@@ -20,7 +20,7 @@ services:
       retries: 20
 
   server:
-    image: noagaler/focusflow-server:latest
+    image: noagal/focusflow-server:latest
     restart: unless-stopped
     env_file: .env
     environment:
@@ -34,7 +34,7 @@ services:
       - "8000:8000"
 
   client:
-    image: noagaler/focusflow-client:latest
+    image: noagal/focusflow-client:latest
     restart: unless-stopped
     environment:
       API_UPSTREAM: http://server:8000   # nginx forwards /api to the server container

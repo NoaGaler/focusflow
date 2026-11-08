@@ -10,18 +10,18 @@ const SCORE_EVERY_MS = 5000;
 const MIN_FACE_FRAMES = WINDOW_FRAMES / 2; // need a face in at least half of the window
 
 export function cameraErrorMessage(err) {
-  if (!navigator.mediaDevices) return "המצלמה עובדת רק באתר מאובטח (https). פתחו את האתר בכתובת https.";
+  if (!navigator.mediaDevices) return "The camera only works on a secure site (https). Open the site with https://.";
   switch (err?.name) {
     case "NotAllowedError":
     case "SecurityError":
-      return "לא ניתנה הרשאה למצלמה. אפשרו גישה למצלמה בסרגל הכתובת של הדפדפן ונסו שוב.";
+      return "Camera permission was denied. Allow camera access from the browser's address bar and try again.";
     case "NotFoundError":
     case "OverconstrainedError":
-      return "לא נמצאה מצלמה. חברו מצלמה ונסו שוב.";
+      return "No camera was found. Connect a camera and try again.";
     case "NotReadableError":
-      return "המצלמה תפוסה על ידי תוכנה אחרת (למשל Zoom). סגרו אותה ונסו שוב.";
+      return "The camera is being used by another app (e.g. Zoom). Close it and try again.";
     default:
-      return "לא הצלחנו להפעיל את המצלמה או את מודל הקשב. נסו לרענן את הדף.";
+      return "Could not start the camera or the attention model. Try refreshing the page.";
   }
 }
 
@@ -30,7 +30,7 @@ export async function listCameras() {
   const devices = await navigator.mediaDevices.enumerateDevices();
   return devices
     .filter((d) => d.kind === "videoinput")
-    .map((d, i) => ({ id: d.deviceId, label: d.label || `מצלמה ${i + 1}` }));
+    .map((d, i) => ({ id: d.deviceId, label: d.label || `Camera ${i + 1}` }));
 }
 
 export function useFocusTracker({ onScore }) {

@@ -20,7 +20,7 @@ services:
       retries: 20
 
   server:
-    image: ${DOCKERHUB_USER:-noagaler}/focusflow-server:latest
+    image: ${DOCKERHUB_USER:-noagal}/focusflow-server:latest
     build: ./server
     restart: unless-stopped
     env_file:
@@ -37,7 +37,7 @@ services:
       - "8000:8000"
 
   client:
-    image: ${DOCKERHUB_USER:-noagaler}/focusflow-client:latest
+    image: ${DOCKERHUB_USER:-noagal}/focusflow-client:latest
     build: ./client
     restart: unless-stopped
     environment:
