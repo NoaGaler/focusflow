@@ -4,6 +4,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { detectFace, getLandmarker } from "./landmarker";
 import { getModel, POINTS, scoreWindow, WINDOW_FRAMES } from "./model";
+import { cropNormalize } from "./normalize";
+
+// Which input the shown score uses ("raw" or "crop"). In debug mode both are computed.
+export const NORMALIZATION = "raw";
 
 const FPS = 10;
 const SCORE_EVERY_MS = 5000;
@@ -33,7 +37,7 @@ export async function listCameras() {
     .map((d, i) => ({ id: d.deviceId, label: d.label || `Camera ${i + 1}` }));
 }
 
-export function useFocusTracker({ onScore }) {
+export function useFocusTracker({ onScore, debug = false }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const onScoreRef = useRef(onScore);
@@ -86,15 +90,26 @@ export function useFocusTracker({ onScore }) {
         onScoreRef.current?.({ noFace: true });
         return;
       }
+      const video = videoRef.current;
+      const w = video?.videoWidth || 640, h = video?.videoHeight || 480;
       // Fill frames without a face with the closest earlier face (or the first one found).
-      const input = new Float32Array(WINDOW_FRAMES * POINTS * 3);
-      let last = valid[0];
-      window.forEach((f, i) => {
-        if (f) last = f;
-        input.set(last, i * POINTS * 3);
-      });
-      const result = await scoreWindow(input);
-      onScoreRef.current?.(result);
+      const build = (mode) => {
+        const input = new Float32Array(WINDOW_FRAMES * POINTS * 3);
+        let last = valid[0];
+        window.forEach((f, i) => {
+          if (f) last = f;
+          input.set(mode === "crop" ? cropNormalize(last, w, h) : last, i * POINTS * 3);
+        });
+        return input;
+      };
+      if (debug) {
+        const raw = await scoreWindow(build("raw"));
+        const crop = await scoreWindow(build("crop"));
+        console.log(`[focus debug] raw=${raw.score.toFixed(3)} (level ${raw.level})  crop=${crop.score.toFixed(3)} (level ${crop.level})`);
+        onScoreRef.current?.({ ...(NORMALIZATION === "crop" ? crop : raw), debug: { raw, crop } });
+      } else {
+        onScoreRef.current?.(await scoreWindow(build(NORMALIZATION)));
+      }
     } catch (e) {
       console.error("model error", e);
     } finally {

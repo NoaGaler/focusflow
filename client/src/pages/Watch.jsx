@@ -132,7 +132,7 @@ export default function Watch() {
     }
     setNoFace(false);
     const reading = { position: Math.round(getPosition() * 100) / 100, score: result.score, level: result.level };
-    setLast(reading);
+    setLast(result.debug ? { ...reading, debug: result.debug } : reading);
     setReadings((list) => [...list, reading]);
 
     const low = reading.score < LOW_FOCUS;
@@ -149,7 +149,8 @@ export default function Watch() {
     }
   }, [getPosition, isText]);
 
-  const tracker = useFocusTracker({ onScore });
+  const debug = params.get("debug") === "1"; // /watch/<id>?debug=1 shows both model inputs
+  const tracker = useFocusTracker({ onScore, debug });
 
   async function startSession() {
     setError("");

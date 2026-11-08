@@ -172,3 +172,4 @@ input:focus, textarea:focus, select:focus { outline: 2px solid #a5b4fc; border-c
   .nav { gap: 0.7rem; font-size: 0.95rem; }
   .hello { display: none; }
 }
+.debug-box { margin-top: 0.5rem; padding: 0.4rem; background: #f1f5f9; border-radius: 6px; font-family: monospace; }
