@@ -41,6 +41,8 @@ jobs:
           context: ./${{ matrix.service }}
           platforms: linux/amd64
           push: true
+          provenance: false   # plain single-image manifest (simplest for Cloud Run and registry mirrors)
+          sbom: false
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/focusflow-${{ matrix.service }}:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/focusflow-${{ matrix.service }}:${{ github.sha }}
