@@ -1,0 +1,47 @@
+# FocusFlow - the whole system with one command:  docker compose up
+#   Client: http://localhost:3000        Server health: http://localhost:8000/health
+#   API docs: http://localhost:8000/api/docs
+#
+# The images are public on Docker Hub (built for linux/amd64 by GitHub Actions).
+# Submission version: pulls the public images only (no source code needed).
+
+name: focusflow
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db          # data survives restarts
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  server:
+    image: noagaler/focusflow-server:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Inside Docker the database host is the service name "mongo", not localhost.
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
+      DB_NAME: ${DB_NAME:-focusflow}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  client:
+    image: noagaler/focusflow-client:latest
+    restart: unless-stopped
+    environment:
+      API_UPSTREAM: http://server:8000   # nginx forwards /api to the server container
+    depends_on:
+      - server
+    ports:
+      - "3000:3000"
+
+volumes:
+  mongo-data:
