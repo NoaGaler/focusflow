@@ -22,7 +22,9 @@ services:
   server:
     image: noagal/focusflow-server:latest
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false   # works even without a .env file
     environment:
       # Inside Docker the database host is the service name "mongo", not localhost.
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
