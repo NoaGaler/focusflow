@@ -1,11 +1,27 @@
 """MongoDB connection and indexes."""
+import logging
+import re
+
 from bson import ObjectId
 from bson.errors import InvalidId
 from pymongo import ASCENDING, DESCENDING, MongoClient
 
 from . import config
 
-client = MongoClient(config.MONGODB_URI, serverSelectionTimeoutMS=5000, tz_aware=True)
+log = logging.getLogger("focusflow")
+
+def _redact(text: str) -> str:
+    """Hide the user and password of a MongoDB address before writing it to a log."""
+    return re.sub(r"//[^@/\s]*@", "//***:***@", text)
+
+
+try:
+    client = MongoClient(config.MONGODB_URI, serverSelectionTimeoutMS=5000, tz_aware=True)
+except Exception as e:  # e.g. a malformed MONGODB_URI, or its DNS name cannot be resolved
+    # Do not crash: the server still starts (so /health answers and the logs explain the problem).
+    log.error("MONGODB_URI cannot be used (%s: %s). Check the secret's value.", type(e).__name__, _redact(str(e)))
+    client = MongoClient("mongodb://mongodb-uri-is-invalid:27017", serverSelectionTimeoutMS=2000,
+                         connect=False, tz_aware=True)
 db = client[config.DB_NAME]
 
 users = db["users"]
