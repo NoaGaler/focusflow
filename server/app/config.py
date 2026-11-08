@@ -6,10 +6,32 @@ In the cloud they come from Cloud Run, and the secret ones from Secret Manager.
 import logging
 import os
 import secrets
+from urllib.parse import quote, unquote
 
 log = logging.getLogger("focusflow")
 
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+
+
+def normalize_mongodb_uri(uri: str) -> str:
+    """Escape the user name and password inside a MongoDB address.
+
+    Passwords may contain characters such as @ : / % that MongoDB requires to be
+    written in %XX form. Doing it here means the secret can hold the password exactly
+    as Atlas generated it (already-escaped values like %40 also keep working).
+    """
+    uri = uri.strip()
+    scheme, sep, rest = uri.partition("://")
+    at = rest.rfind("@")  # the host part never contains "@", so the LAST one ends the password
+    if not sep or at == -1:
+        return uri
+    userinfo, hosts = rest[:at], rest[at + 1:]
+    user, colon, password = userinfo.partition(":")
+    user = quote(unquote(user), safe="")
+    password = quote(unquote(password), safe="")
+    return f"{scheme}://{user}{colon}{password}@{hosts}"
+
+
+MONGODB_URI = normalize_mongodb_uri(os.getenv("MONGODB_URI", "mongodb://localhost:27017"))
 DB_NAME = os.getenv("DB_NAME", "focusflow")
 
 # Secret used to sign login tokens (JWT).
