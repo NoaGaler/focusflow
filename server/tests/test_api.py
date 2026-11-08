@@ -110,7 +110,7 @@ def test_session_flow(client):
     assert s.status_code == 201
     sid = s.json()["id"]
     for pos, score in [(10, 0.8), (20, 0.3), (30, 0.7)]:
-        r = client.post(f"/api/sessions/{sid}/readings", headers=h, json={"position": pos, "score": score, "level": 3})
+        r = client.post(f"/api/sessions/{sid}/readings", headers=h, json={"position": pos, "score": score, "raw_score": 0.4, "level": 3})
         assert r.status_code == 201, r.text
     assert client.post(f"/api/sessions/{sid}/readings", headers=h, json={"position": 1, "score": 1.5}).status_code == 422
     assert client.post(f"/api/sessions/{sid}/readings", headers=other, json={"position": 1, "score": 0.5}).status_code == 404
@@ -123,4 +123,5 @@ def test_session_flow(client):
     full = client.get(f"/api/sessions/{sid}", headers=h).json()
     assert [r["position"] for r in full["readings"]] == [10, 20, 30]
     assert full["readings"][0]["created_at"].endswith("Z")
+    assert full["readings"][0]["raw_score"] == 0.4
     assert client.get("/api/sessions", headers=other).json() == []

@@ -55,6 +55,8 @@ def add_reading(session_id: str, body: ReadingIn, user: dict = Depends(get_curre
                "created_at": datetime.now(timezone.utc)}
     if body.level is not None:
         reading["level"] = body.level
+    if body.raw_score is not None:
+        reading["raw_score"] = round(body.raw_score, 4)
 
     # Atomic: only adds the reading if the session is still open and not full.
     result = db.sessions.update_one(

@@ -35,7 +35,7 @@ Browser
 | 4 | The server opens a new session | `POST /api/sessions` → `server/app/routers/sessions.py` |
 | 5 | Every 100 ms: MediaPipe extracts 478 points (x, y, z) from the frame; the last 100 frames are kept | `useFocusTracker.js` → `frameTimer` |
 | 6 | Every 5 s: if at least half the window has a face, the model runs; otherwise "No face detected" | `runModel` |
-| 7 | The model returns a 0–1 score, shown as 0–100 with a color | `components/ScoreCard.jsx` |
+| 7 | The model returns a raw 0–1 score; it is calibrated and shown as 0–100 with a color | `focus/calibration.js`, `components/ScoreCard.jsx` |
 | 8 | Score + video time are sent to the server and stored | `POST /api/sessions/{id}/readings` |
 | 9 | A score below 0.4 after a normal one creates a rewind point (10 s before the reading) | `Watch.jsx` → `onScore`, `utils.js` → `findDriftPoints` |
 | 10 | "End session": the server closes it and computes the average; the user sees the summary | `POST /api/sessions/{id}/end`, `pages/SessionDetail.jsx` |
@@ -50,6 +50,20 @@ started roughly 10 seconds before the low reading.
   * `classification_logits`: 5 levels. Stored as `level`, not displayed.
   * `attention_weights`: weight per frame. Not used yet (an idea for the final project).
 * We verified the browser returns **exactly** the same score as Python onnxruntime (`0.34063` on the same input), in about 30 ms.
+* **Input format (important finding).** The model starts with a per-frame normalization (LayerNorm over all
+  1434 numbers), so it ignores overall size, but NOT where the face is. We tested three formats:
+  * `raw` (points relative to the whole camera frame) and `crop` (relative to a square face crop) kept the
+    score stuck at about 13-22, whatever the user did.
+  * `nose`: the face crop, then every point minus the nose tip (point 1). Only this one reacts to head pose,
+    so it is what we use (`client/src/focus/normalize.js`).
+  We found this by building a synthetic face from MediaPipe's canonical face mesh, rotating it (straight /
+  turned / looking down), and running the model in Python; then confirmed with real webcam sessions.
+  Open `/watch/<id>?debug=1` to see all three side by side.
+* **Calibration.** Even with the right input, the model's raw score stays in a narrow range (about 0.2-0.6),
+  because it was trained on labels like 0.30 / 0.50 / 0.70 and pulls toward the middle. Real tests gave:
+  focused 0.46, looking down 0.35, head turned 0.30. `client/src/focus/calibration.js` stretches this range to
+  0-100 for display (0.46 → 82, 0.35 → 35, 0.30 → 20). Both values are saved: `score` (shown) and `raw_score`.
+  Labels: below 40 = low focus (alert), 40-65 = medium, 65+ = focused.
 * **Why v4_2?** It is the recommended model, and it has both the 5-level classification and attention weights.
   Limitation: it is a statistical estimate, so a single score can be noisy. That is why we show trends and
   rewind points instead of reacting harshly to one reading.
@@ -97,5 +111,6 @@ client/nginx/      nginx config (including forwarding /api to the server)
 | Why MongoDB? | A session with its list of readings fits naturally in one document; Atlas has a free tier for the cloud. |
 | Why FastAPI? | Automatic input validation, docs at `/api/docs`, and it is the assignment's recommendation. |
 | What if there is no face? | If fewer than half of the 100 frames have a face, the model is not run and "No face detected" is shown. |
+| Why does the score not reach 100? | The model was trained on labels such as 0.70 = engaged and its raw output stays in a narrow range, so we calibrated the display from real tests and keep the raw value too. |
 | Why every 5 seconds and not 10? | A sliding window: always the last 10 seconds, but updating more often reacts faster. |
 | What is a session? | One viewing of an item: it starts at the consent click and ends with "End session" or when leaving the page. |

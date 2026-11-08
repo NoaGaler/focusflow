@@ -8,6 +8,7 @@ import FocusTimeline from "../components/FocusTimeline";
 import ScoreCard from "../components/ScoreCard";
 import { listCameras, useFocusTracker } from "../focus/useFocusTracker";
 import { loadYouTubeApi } from "../focus/youtube";
+import { calibrate } from "../focus/calibration";
 import { findDriftPoints, formatPosition, LOW_FOCUS } from "../utils";
 import NotFound from "./NotFound";
 
@@ -131,7 +132,12 @@ export default function Watch() {
       return;
     }
     setNoFace(false);
-    const reading = { position: Math.round(getPosition() * 100) / 100, score: result.score, level: result.level };
+    const reading = {
+      position: Math.round(getPosition() * 100) / 100,
+      score: Math.round(calibrate(result.score) * 10000) / 10000, // what the user sees
+      raw_score: Math.round(result.score * 10000) / 10000,        // the model's own output
+      level: result.level,
+    };
     setLast(result.debug ? { ...reading, debug: result.debug } : reading);
     setReadings((list) => [...list, reading]);
 

@@ -46,6 +46,8 @@ def reading_out(r: dict) -> dict:
     out = {"position": r["position"], "score": r["score"], "created_at": iso(r["created_at"])}
     if r.get("level") is not None:
         out["level"] = r["level"]
+    if r.get("raw_score") is not None:
+        out["raw_score"] = r["raw_score"]
     return out
 
 

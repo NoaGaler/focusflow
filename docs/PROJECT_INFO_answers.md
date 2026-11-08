@@ -24,10 +24,10 @@ Copy each answer into the "your answer" column of the Word file. Anything marked
 | backend_framework | FastAPI (Python 3.12) + uvicorn |
 | frontend_framework | React 18 + Vite, served by nginx |
 | database | MongoDB 7, as a container in Compose with a volume |
-| what_is_measured | Attention (the recommended model). Score 0–1 shown as 0–100: below 40 = low focus (red), 40–60 = medium (yellow), 60+ = focused (green). |
+| what_is_measured | Attention (the recommended model). The raw model score (0–1, in practice ~0.2–0.6) is calibrated to 0–100: below 40 = low focus (red), 40–65 = medium (yellow), 65+ = focused (green). Both the calibrated and raw scores are saved. |
 | models_used | MediaPipe Face Landmarker (478 points, browser) + v4_2.onnx attention model via onnxruntime-web (browser). Nothing runs on the server. |
-| model_highlights | Sliding 10-second window re-scored every 5 seconds; "rewind points" turn score drops into clickable moments in the video; colored attention timeline under the video; verified identical output to Python onnxruntime. |
-| changes_to_recommended_api | Same paths and fields. Additions: readings accept optional `level` (model class 0–4); sessions list also returns `content_title`, `content_type`, `ended_at`, `reading_count`. Extra alias `GET /api/health`. Login is rate-limited (429). |
+| model_highlights | We found the input format the model reacts to (face-crop landmarks centered on the nose tip; raw frame coordinates kept the score stuck) by probing it with a synthetic MediaPipe face mesh, then calibrated its narrow output range from real tests (`?debug=1` shows raw/crop/nose side by side). Sliding 10-second window re-scored every 5 seconds; "rewind points" turn score drops into clickable moments in the video; colored attention timeline under the video; verified identical output to Python onnxruntime. |
+| changes_to_recommended_api | Same paths and fields. Additions: readings accept optional `raw_score` (model output before calibration) and `level` (model class 0–4); sessions list also returns `content_title`, `content_type`, `ended_at`, `reading_count`. Extra alias `GET /api/health`. Login is rate-limited (429). |
 
 ## Using the site
 | Field | Answer |

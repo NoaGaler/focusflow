@@ -109,6 +109,7 @@ class SessionIn(Strict):
 class ReadingIn(Strict):
     # Video: seconds from the start. Text: how far the user scrolled, 0-100 (%).
     position: float = Field(ge=0, le=100000)
-    score: float = Field(ge=0, le=1)
+    score: float = Field(ge=0, le=1)  # calibrated score, as shown to the user
+    raw_score: float | None = Field(default=None, ge=0, le=1)  # the model's original output
     # Optional: the model's 5-level class (0 = not in camera ... 4 = very engaged)
     level: int | None = Field(default=None, ge=0, le=4)

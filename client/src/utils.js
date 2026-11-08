@@ -1,6 +1,6 @@
 // Small shared helpers: time format and the meaning of a score.
 
-export const LOW_FOCUS = 0.4; // below this we show the "you drifted" alert
+export const LOW_FOCUS = 0.4; // calibrated score below this -> the "you drifted" alert
 
 export function formatTime(seconds) {
   const s = Math.max(0, Math.floor(seconds || 0));
@@ -18,7 +18,7 @@ export function formatPosition(position, contentType) {
 export function scoreLevel(score) {
   if (score == null) return { key: "none", label: "No data", color: "#94a3b8" };
   if (score < LOW_FOCUS) return { key: "low", label: "Low focus", color: "#ef4444" };
-  if (score < 0.6) return { key: "mid", label: "Medium focus", color: "#f59e0b" };
+  if (score < 0.65) return { key: "mid", label: "Medium focus", color: "#f59e0b" };
   return { key: "high", label: "Focused", color: "#22c55e" };
 }
 
